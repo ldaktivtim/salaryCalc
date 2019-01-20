@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Калкулатор за плата</title>
+		<style>
+			body
+			{
+				background-color: lightgrey;
+			}
+
+			#title
+			{
+				font-family: sans-serif;
+				color: blue;
+				text-align: center;
+			}
+
+			fieldset
+			{
+				display: inline-block;
+				margin: auto;
+				margin-top: 8%;
+				margin-left: 42%;
+				width: 16%;
+				text-align: center;
+			}
+
+			#legend-title
+			{
+				font-family: sans-serif;
+			}
+
+			#fields
+			{
+				padding-top: 12pt;
+				font-family: sans-serif;
+				font-size: 12pt;
+			}
+
+			#bruto-neto
+			{
+				text-align: left;
+			}
+
+			#neto-bruto
+			{
+				margin-top: 8pt;
+				text-align: left;
+			}
+
+			h3
+			{
+				font-family: sans-serif;
+				color: blue;
+				text-align: center;
+			}
+
+			#presmetka-bruto-neto
+			{
+				width: 40%;
+				margin-left: 30%;
+			}
+
+			#presmetka-neto-bruto
+			{
+				width: 40%;
+				margin-left: 30%;
+			}
+
+			#iznosi-bruto-neto, #presmetka-neto-bruto
+			{
+				font-family: sans-serif;
+			}	
+
+			#type-change
+			{
+				font-family: sans-serif;
+				color: blue;
+				font-size: 14pt;
+				text-align: center;
+				padding-top: 20pt;
+			}
+
+			a 
+			{
+			    text-decoration: none;
+			}
+
+			a:link, a:visited 
+			{
+			    color: blue;
+			}
+
+			footer
+			{
+				position: fixed;
+				left: 0;
+				bottom: 0;
+				text-align: center;
+				width: 100%;
+				background-color: white;
+				color: black;
+				font-family: sans-serif;
+				font-size: 10pt;
+			}
+		</style>
+		<script>
+			document.addEventListener("DOMContentLoaded", () => {
+				var body = document.querySelector("body");
+				var type_change = document.querySelector("#type-change");
+				var bruto_neto = document.querySelector("#bruto-neto");
+				var neto_bruto = document.querySelector("#neto-bruto");
+				var options = document.querySelector("#options");
+				var presmetka_bruto_neto = document.querySelector("#presmetka-bruto-neto");
+				var presmetka_neto_bruto = document.querySelector("#presmetka-neto-bruto");
+
+				// Definiranje na stapkite za pridonesi i iznosot na licnoto osloboduvanje
+				var stapka_pio = 0.184;
+				var stapka_zdravstvo = 0.074;
+				var stapka_vrabotuvanje = 0.012;
+				var stapka_dopolnitelno_zdravstvo = 0.005;
+				var vkupna_stapka_na_pridonesi = stapka_pio + stapka_zdravstvo + stapka_vrabotuvanje + stapka_dopolnitelno_zdravstvo;
+				var vkupna_stapka_na_pridonesi_presmetana = parseFloat((vkupna_stapka_na_pridonesi * 100) / (100 - (vkupna_stapka_na_pridonesi * 100)));
+				var stapka_pdd_poniska = 0.1;
+				var stapka_pdd_povisoka = 0.18;
+				var stapka_pdd_poniska_presmetana = parseFloat((stapka_pdd_poniska * 100) / (100 - (stapka_pdd_poniska * 100)));
+				var stapka_pdd_povisoka_presmetana = parseFloat((stapka_pdd_povisoka * 100) / (100 - (stapka_pdd_povisoka * 100)));
+				var licno_osloboduvanje = 8000;
+				var najmal_pdd_za_visoka_plata = 9000;
+
+				// Definiranje na najniskite iznosi na bruto i neto plata, kako i na pragot na neto plata za pdd od 10%
+				var najniska_bruto_plata = 17418;
+				var najniska_neto_plata = 12165;
+				var prag_na_neto_plata = 89000;
+				var propisan_prag_na_neto_plata = 90000;
+
+				// Pri vcituvanje na stranata se gledaat samo opciite za presmetka (od bruto vo neto i obratno)
+				presmetka_bruto_neto.remove();
+				presmetka_neto_bruto.remove();
+				type_change.remove();
+
+				// Ako korisnikot odbere presmetka od bruto vo neto plata
+				bruto_neto.onclick = () => {
+					body.appendChild(presmetka_bruto_neto);
+					presmetka_neto_bruto.remove();
+					body.appendChild(type_change);
+					options.remove();
+
+					// Koga korisnikot ke klikne na "Presmetaj"
+					document.querySelector("#presmetaj-neto-od-bruto").onclick = () => {
+						let bruto_plata = document.querySelector("#bruto-bruto").value;
+						
+						// Ako korisnikot vnese iznos na bruto plata pomal od najniskata osnovica
+						if (bruto_plata < najniska_bruto_plata) {
+							alert("Износот на бруто плата не може да биде помал од " + najniska_bruto_plata + " ден.");
+							return false;
+						}
+
+						let pio = document.querySelector("#pio-bruto");
+						let zdravstvo = document.querySelector("#zdravstvo-bruto");
+						let vrabotuvanje = document.querySelector("#vrabotuvanje-bruto");
+						let dopolnitelno_zdravstvo = document.querySelector("#dopolnitelno-zdravstvo-bruto");
+						let pdd = document.querySelector("#pdd-bruto");
+						let neto_plata = document.querySelector("#neto-od-bruto");
+
+						pio.value = Math.round(parseFloat(bruto_plata * stapka_pio));
+						zdravstvo.value = Math.round(parseFloat(bruto_plata * stapka_zdravstvo));
+						vrabotuvanje.value = Math.round(parseFloat(bruto_plata * stapka_vrabotuvanje));
+						dopolnitelno_zdravstvo.value = Math.round(parseFloat(bruto_plata * stapka_dopolnitelno_zdravstvo));
+
+						pio = parseInt(pio.value);
+						zdravstvo = parseInt(zdravstvo.value);
+						vrabotuvanje = parseInt(vrabotuvanje.value);
+						dopolnitelno_zdravstvo = parseInt(dopolnitelno_zdravstvo.value);
+						
+						let vkupni_pridonesi = pio + zdravstvo + vrabotuvanje + dopolnitelno_zdravstvo;
+						let osnovica_za_pdd = bruto_plata - vkupni_pridonesi - licno_osloboduvanje;
+
+						// Ako iznosot na bruto plata namalen za pridonesite i osloboduvanjeto e do propisanata maksimalna neto plata
+						if (osnovica_za_pdd <= propisan_prag_na_neto_plata) {
+							pdd.value = Math.round(parseFloat(osnovica_za_pdd * stapka_pdd_poniska));
+						} else {
+							let pdd_18 = (bruto_plata - vkupni_pridonesi - (propisan_prag_na_neto_plata + licno_osloboduvanje)) * stapka_pdd_povisoka;
+							pdd.value = Math.round(parseFloat(pdd_18 + najmal_pdd_za_visoka_plata));
+						}
+						
+						pdd = parseInt(pdd.value);
+						neto_plata.value = bruto_plata - vkupni_pridonesi - pdd;
+					}
+				};
+
+				// Ako korisnikot odbere presmetka od bruto vo neto plata
+				neto_bruto.onclick = () => {
+					presmetka_bruto_neto.remove();
+					body.appendChild(presmetka_neto_bruto);
+					body.appendChild(type_change);
+					options.remove();
+
+					// Koga korisnikot ke klikne na "Presmetaj"
+					document.querySelector("#presmetaj-bruto-od-neto").onclick = () => {
+						let neto_plata = document.querySelector("#neto-neto").value;
+						
+						// Ako korisnikot vnese iznos na neto plata pomal od najniskata osnovica
+						if (neto_plata < najniska_neto_plata) {
+							alert("Износот на нето плата не може да биде помал од " + najniska_neto_plata + " ден.");
+							return false;
+						}
+
+						let pio = document.querySelector("#pio-neto");
+						let zdravstvo = document.querySelector("#zdravstvo-neto");
+						let vrabotuvanje = document.querySelector("#vrabotuvanje-neto");
+						let dopolnitelno_zdravstvo = document.querySelector("#dopolnitelno-zdravstvo-neto");
+						let pdd = document.querySelector("#pdd-neto");
+						let bruto_plata = document.querySelector("#bruto-od-neto");
+
+						if (neto_plata <= prag_na_neto_plata) {
+							pdd.value = Math.round((parseFloat(neto_plata) - licno_osloboduvanje) * stapka_pdd_poniska_presmetana);
+						} 
+						else {
+							let pdd_18 = Math.round((parseFloat(neto_plata) - prag_na_neto_plata) * stapka_pdd_povisoka_presmetana);
+							pdd_18 = parseInt(pdd_18);
+							pdd.value = najmal_pdd_za_visoka_plata + pdd_18;
+						}
+
+						pdd = parseInt(pdd.value);
+						
+						let bruto_minus_pridonesi = Math.round(parseFloat(neto_plata) + pdd);
+						bruto_minus_pridonesi = parseInt(bruto_minus_pridonesi);
+
+						bruto_plata.value = parseInt(Math.round(parseFloat(bruto_minus_pridonesi * (1 + vkupna_stapka_na_pridonesi_presmetana))));
+						bruto_plata = parseInt(bruto_plata.value);
+
+						pio.value = Math.round(parseFloat(bruto_plata * stapka_pio));
+						zdravstvo.value = Math.round(parseFloat(bruto_plata * stapka_zdravstvo));
+						vrabotuvanje.value = Math.round(parseFloat(bruto_plata * stapka_vrabotuvanje));
+						dopolnitelno_zdravstvo.value = Math.round(parseFloat(bruto_plata * stapka_dopolnitelno_zdravstvo));
+					};	
+				};
+
+				// Ako korisnikot saka da go promeni tipot na presmetka
+				type_change.onclick = () => {
+					presmetka_bruto_neto.remove();
+					presmetka_neto_bruto.remove();
+					body.appendChild(options);
+					type_change.remove();
+				};
+			})
+		</script>
+	</head>
+	<body>
+		<h2 id="title">Веб апликација за пресметка на плата</h2>
+		<div id="options">
+			<form>
+				<fieldset>
+					<legend><span id="legend-title"><b>Избери тип на пресметка</b></span></legend>
+					<div id="fields">
+						<div>
+							<input id="bruto-neto" type="radio" name="calc-type"/>Од бруто во нето
+						</div>
+						<div>
+							<input id="neto-bruto" type="radio" name="calc-type"/>Од нето во бруто
+						</div>
+					</div>	
+				</fieldset>
+			</form>
+		</div>
+		<div id="presmetka-bruto-neto">
+			<h3>Од бруто во нето</h3>
+			<div id="iznosi-bruto-neto">
+				<table>
+					<tr>
+						<th>Внеси го износот на бруто плата:</th>
+						<th><input id="bruto-bruto" type="number" step=1 min="17418" /></th>
+						<th><button id="presmetaj-neto-od-bruto">Пресметај</button></th>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+					</tr>	
+					<tr>
+						<td>Придонес за ПИО:</td>
+						<td><input id="pio-bruto" type="number" disabled /></td>
+					</tr>
+					<tr>
+						<td>Придонес за здравство:</td>
+						<td><input id="zdravstvo-bruto" type="number" disabled /></td>
+					</tr>
+					<tr>
+						<td>Придонес за вработување:</td>
+						<td><input id="vrabotuvanje-bruto" type="number" disabled /></td>
+					</tr>
+					<tr>
+						<td>Придонес за дополнително здравство:</td>
+						<td><input id="dopolnitelno-zdravstvo-bruto" type="number" disabled /></td>
+					</tr>
+					<tr>
+						<td>Персонален данок на доход:</td>
+						<td><input id="pdd-bruto" type="number" disabled /></td>
+					</tr>
+					<tr>
+						<td><b>Нето плата:</b></td>
+						<td><input id="neto-od-bruto" type="number" disabled /></td>
+					</tr>
+				</table>
+			</div>		
+		</div>
+		<div id="presmetka-neto-bruto">
+			<h3>Од нето во бруто</h3>
+			<div id="iznosi-neto-bruto">
+				<table>
+					<tr>
+						<th>Внеси го износот на нето плата:</th>
+						<th><input id="neto-neto" type="number" step=1 min="12165" /></th>
+						<th><button id="presmetaj-bruto-od-neto">Пресметај</button></th>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+					</tr>	
+					<tr>
+						<td>Придонес за ПИО:</td>
+						<td><input id="pio-neto" type="number" disabled /></td>
+					</tr>
+					<tr>
+						<td>Придонес за здравство:</td>
+						<td><input id="zdravstvo-neto" type="number" disabled /></td>
+					</tr>
+					<tr>
+						<td>Придонес за вработување:</td>
+						<td><input id="vrabotuvanje-neto" type="number" disabled /></td>
+					</tr>
+					<tr>
+						<td>Придонес за дополнително здравство:</td>
+						<td><input id="dopolnitelno-zdravstvo-neto" type="number" disabled /></td>
+					</tr>
+					<tr>
+						<td>Персонален данок на доход:</td>
+						<td><input id="pdd-neto" type="number" disabled /></td>
+					</tr>
+					<tr>
+						<td><b>Бруто плата:</b></td>
+						<td><input id="bruto-od-neto" type="number" disabled /></td>
+					</tr>
+				</table>
+			</div>
+		</div>
+
+		<div id="type-change">
+			<a href="#"><b>&larr; Промени го типот на пресметка</b></a>
+		</div>
+		<footer>
+			<p id="creator"><b>Апликацијата е изработена од: </b><a href="http://ldaktivtim.mk" target="_blank"><b>ЛД АКТИВ ТИМ</b></a></p>
+		</footer>	
+	</body>
+</html>
